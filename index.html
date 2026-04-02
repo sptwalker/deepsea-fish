@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深海钓鱼游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- 深度显示 -->
+        <div id="depthDisplay">深度: 0 米</div>
+        
+        <!-- 负重计数器 -->
+        <div id="weightCounter" style="display: none;">
+            <div id="weightLabel">鱼线承重</div>
+            <div id="weightIcon"></div>
+            <div id="weightValue">0 / 250</div>
+        </div>
+        
+        <!-- 开始界面 -->
+        <div id="startScreen">
+            <h1>深海钓鱼</h1>
+            <p>点击屏幕开始钓鱼</p>
+            <p>躲避鱼儿，潜得更深</p>
+            <p>小心重量，别让线断啦！</p>
+        </div>
+        
+        <!-- 失败界面 -->
+        <div id="failScreen" style="display: none;">
+            <h1>你失败了</h1>
+            <p>钓线断裂了！</p>
+            <button id="retryBtn">再试一次</button>
+        </div>
+        
+        <!-- 胜利界面 -->
+        <div id="winScreen" style="display: none;">
+            <h1>恭喜胜利！</h1>
+            <div id="maxDepth"></div>
+            <div id="fishCount"></div>
+            <div id="fishDisplay"></div>
+            <div id="totalValue"></div>
+            <button id="playAgainBtn">再玩一次</button>
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>
