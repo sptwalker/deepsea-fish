@@ -63,6 +63,7 @@ class DeepSeaFishingGame {
         this.depth = 0;
         this.maxDepthReached = 0;
         this.hookX = this.canvas.width / 2;
+        this.hookYOffset = 0; // 鱼钩垂直偏移（鼠标控制，单位像素）
         this.collisionCount = 0;
         this.currentWeight = 0;
         this.currentMaxWeight = INITIAL_MAX_WEIGHT; // 当前最大负重（会因碰撞而减少）
@@ -243,9 +244,14 @@ class DeepSeaFishingGame {
     }
     
     handleMouseMove(e) {
-        // 下降阶段和上升阶段都可以用鼠标控制钓钩左右移动
         if (this.state === GameState.DESCENDING || this.state === GameState.ASCENDING) {
             this.hookX = e.clientX;
+        }
+        // 下降阶段：垂直方向在默认位置上下10米范围内跟随鼠标
+        if (this.state === GameState.DESCENDING) {
+            const defaultY = this.getDefaultHookScreenY();
+            const maxOffset = 10 * this.pixelsPerMeter; // 10米对应像素
+            this.hookYOffset = Math.max(-maxOffset, Math.min(maxOffset, e.clientY - defaultY));
         }
     }
     
@@ -270,9 +276,14 @@ class DeepSeaFishingGame {
     
     generateFishes() {
         this.fishes = [];
-        
+
+        // 根据屏幕分辨率计算密度系数（以2560x1600为参考，降低1/3）
+        const refArea = 2560 * 1600;
+        const currentArea = this.canvas.width * this.canvas.height;
+        const densityFactor = (currentArea / refArea) * (2 / 3);
+
         // 生成小鱼（高密度，均匀分布在整个深度范围）
-        const smallFishCount = 80 + Math.floor(Math.random() * 40);
+        const smallFishCount = Math.max(10, Math.floor((80 + Math.random() * 40) * densityFactor));
         for (let i = 0; i < smallFishCount; i++) {
             // 随机深度：0-250米均匀分布
             const randomDepth = Math.random() * MAX_DEPTH;
@@ -303,7 +314,7 @@ class DeepSeaFishingGame {
         }
         
         // 生成其他鱼类（原有的逻辑）
-        const otherFishCount = 50 + Math.floor(Math.random() * 30);
+        const otherFishCount = Math.max(8, Math.floor((50 + Math.random() * 30) * densityFactor));
         
         for (let i = 0; i < otherFishCount; i++) {
             let fishTypeIndex;
@@ -399,6 +410,7 @@ class DeepSeaFishingGame {
         if (this.state !== GameState.DESCENDING) return;
         
         this.state = GameState.ASCENDING;
+        this.hookYOffset = 0; // 上升阶段锁定垂直位置
         this.maxDepthReached = this.depth;
         // 负重计数器已经在下降阶段显示了，这里不需要再显示
         this.updateWeightDisplay();
@@ -410,6 +422,7 @@ class DeepSeaFishingGame {
         this.cameraY = 0;
         this.maxDepthReached = 0;
         this.hookX = this.canvas.width / 2;
+        this.hookYOffset = 0; // 鱼钩垂直偏移（鼠标控制，单位像素）
         this.collisionCount = 0;
         this.currentWeight = 0;
         this.caughtFish = [];
@@ -737,8 +750,8 @@ class DeepSeaFishingGame {
         }
     }
     
-    // 获取鱼钩在屏幕上的Y位置
-    getHookScreenY() {
+    // 获取鱼钩默认在屏幕上的Y位置（不含鼠标偏移）
+    getDefaultHookScreenY() {
         const twoThirdsY = this.canvas.height * SCREEN_2_3_RATIO;
         
         // 鱼钩初始在Y=150，随着深度增加到2/3位置后固定
@@ -747,6 +760,11 @@ class DeepSeaFishingGame {
         const progress = Math.min(this.depth, maxVisibleDepth) / maxVisibleDepth;
         
         return initialY + progress * (twoThirdsY - initialY);
+    }
+    
+    // 获取鱼钩在屏幕上的实际Y位置（含鼠标偏移）
+    getHookScreenY() {
+        return this.getDefaultHookScreenY() + this.hookYOffset;
     }
     
     // 获取鱼钩在世界坐标中的Y位置
@@ -798,6 +816,26 @@ class DeepSeaFishingGame {
     
     showWinScreen() {
         const winScreen = document.getElementById('winScreen');
+        
+        // 根据钓到的总重量显示称号
+        const totalWeight = this.caughtFish.reduce((sum, fish) => sum + fish.weight, 0);
+        let title;
+        if (totalWeight === 0) {
+            title = '空军大佬，再接再厉！';
+        } else if (totalWeight <= 10) {
+            title = '小鱼见习生';
+        } else if (totalWeight <= 30) {
+            title = '浅海新手';
+        } else if (totalWeight <= 80) {
+            title = '船钓熟手';
+        } else if (totalWeight <= 150) {
+            title = '海钓达人';
+        } else if (totalWeight <= 240) {
+            title = '沧海钓王';
+        } else {
+            title = '拜见深海鱼神！';
+        }
+        winScreen.querySelector('h1').textContent = title;
         
         // 显示最大深度
         document.getElementById('maxDepth').textContent = 
