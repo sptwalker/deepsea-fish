@@ -4,9 +4,16 @@
     box-sizing: border-box;
 }
 
-body {
+html, body {
     overflow: hidden;
-    font-family: 'Microsoft YaHei', sans-serif;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+body {
+    font-family: 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
     background: #001a33;
 }
 
@@ -14,6 +21,7 @@ body {
     position: relative;
     width: 100vw;
     height: 100vh;
+    height: 100dvh; /* 动态视口高度 */
     overflow: hidden;
 }
 
@@ -24,13 +32,13 @@ body {
 }
 
 #depthDisplay {
-    display: none; /* 深度显示已改为左侧坐标轴 */
+    display: none;
 }
 
 #weightCounter {
     position: absolute;
     top: 50%;
-    right: 30px;
+    right: clamp(8px, 2vw, 20px);
     transform: translateY(-50%);
     z-index: 10;
 }
@@ -38,26 +46,26 @@ body {
 #weightLabel {
     text-align: center;
     color: #fff;
-    font-size: 18px;
+    font-size: clamp(10px, 2.5vw, 16px);
     font-weight: bold;
-    margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    margin-bottom: 6px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 #weightIcon {
-    width: 70px;
-    height: var(--icon-height, 300px); /* 使用CSS变量控制高度 */
+    width: clamp(30px, 8vw, 60px);
+    height: var(--icon-height, 200px);
     background: linear-gradient(to top, 
         #44ff44 0%, 
         #aaff44 25%, 
         #ffcc44 50%, 
         #ffaa00 75%, 
         #ff4444 100%);
-    border-radius: 10px 10px 0 0;
-    border: 3px solid #fff;
+    border-radius: 6px 6px 0 0;
+    border: 2px solid #fff;
     position: relative;
     overflow: hidden;
-    transition: height 0.3s ease; /* 添加高度过渡动画 */
+    transition: height 0.3s ease;
 }
 
 #weightIcon::after {
@@ -75,10 +83,10 @@ body {
 #weightValue {
     text-align: center;
     color: #fff;
-    font-size: 18px;
+    font-size: clamp(10px, 2.5vw, 16px);
     font-weight: bold;
-    margin-top: 10px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    margin-top: 6px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 #startScreen,
@@ -93,90 +101,134 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background: rgba(0, 26, 51, 0.9);
+    background: rgba(0, 26, 51, 0.95);
     color: #fff;
     z-index: 100;
+    padding: 20px;
 }
 
 #startScreen h1,
 #failScreen h1,
 #winScreen h1 {
-    font-size: 72px;
-    margin-bottom: 30px;
-    text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+    font-size: clamp(32px, 10vw, 56px);
+    margin-bottom: clamp(16px, 4vw, 28px);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    text-align: center;
 }
 
 #startScreen p,
 #failScreen p {
-    font-size: 24px;
-    margin: 10px 0;
+    font-size: clamp(14px, 4vw, 20px);
+    margin: clamp(4px, 1.5vw, 8px) 0;
+    text-align: center;
 }
 
 button {
-    padding: 15px 40px;
-    font-size: 24px;
+    padding: clamp(12px, 3vw, 16px) clamp(24px, 6vw, 36px);
+    font-size: clamp(16px, 4vw, 22px);
     background: linear-gradient(to bottom, #4CAF50, #2E7D32);
     color: #fff;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
-    margin-top: 30px;
+    margin-top: clamp(20px, 5vw, 30px);
     transition: transform 0.2s, box-shadow 0.2s;
+    min-height: 48px;
+    min-width: 120px;
 }
 
 button:hover {
     transform: scale(1.05);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+button:active {
+    transform: scale(0.98);
 }
 
 #maxDepth {
-    font-size: 28px;
-    margin: 10px 0;
+    font-size: clamp(16px, 4.5vw, 24px);
+    margin: clamp(6px, 2vw, 10px) 0;
 }
 
 #fishCount {
-    font-size: 28px;
-    margin: 10px 0;
+    font-size: clamp(16px, 4.5vw, 24px);
+    margin: clamp(6px, 2vw, 10px) 0;
 }
 
 #fishDisplay {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
-    margin: 20px 0;
-    max-width: 600px;
+    gap: clamp(6px, 1.5vw, 10px);
+    margin: clamp(12px, 3vw, 20px) 0;
+    max-width: 90vw;
+    max-height: 40vh;
+    overflow-y: auto;
 }
 
 .fishItem {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 10px;
+    padding: clamp(6px, 1.5vw, 10px);
     background: rgba(255,255,255,0.1);
-    border-radius: 8px;
+    border-radius: 6px;
 }
 
 .fishIcon {
-    font-size: 36px;
-    margin-bottom: 5px;
-}
-
-.fishName {
-    font-size: 14px;
+    font-size: clamp(24px, 6vw, 36px);
     margin-bottom: 3px;
 }
 
+.fishIcon img {
+    width: clamp(36px, 10vw, 50px);
+    height: clamp(36px, 10vw, 50px);
+    object-fit: contain;
+}
+
+.fishName {
+    font-size: clamp(10px, 2.5vw, 13px);
+    margin-bottom: 2px;
+}
+
 .fishValue {
-    font-size: 16px;
+    font-size: clamp(12px, 3vw, 15px);
     color: #ffd700;
     font-weight: bold;
 }
 
 #totalValue {
-    font-size: 48px;
+    font-size: clamp(24px, 7vw, 40px);
     color: #ffd700;
     font-weight: bold;
-    margin: 20px 0;
+    margin: clamp(12px, 3vw, 20px) 0;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+/* 安全区域适配（iPhone刘海屏等）*/
+@supports (padding: env(safe-area-inset-top)) {
+    #startScreen,
+    #failScreen,
+    #winScreen {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+    
+    #weightCounter {
+        right: max(clamp(8px, 2vw, 20px), env(safe-area-inset-right));
+        top: max(50%, env(safe-area-inset-top));
+    }
+}
+
+/* 横屏时隐藏纵屏提示 */
+@media (orientation: landscape) {
+    #startScreen,
+    #failScreen,
+    #winScreen {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
 }
