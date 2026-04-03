@@ -253,17 +253,16 @@ class DeepSeaFishingGame {
             
             // 控制鱼钩位置（基于摇杆）
             if (this.state === GameState.DESCENDING || this.state === GameState.ASCENDING) {
-                // 灵敏度系数（0-1，越小越不灵敏）
-                const sensitivity = 0.35;
-                
-                // 水平方向：全范围移动
-                this.hookX = this.canvas.width / 2 + this.joystickDeltaX * (this.canvas.width / 2) * sensitivity;
+                // 水平方向：直接设置位置
+                this.hookX = this.canvas.width / 2 + this.joystickDeltaX * (this.canvas.width / 2);
                 
                 // 垂直方向：控制世界Y坐标
                 if (this.state === GameState.DESCENDING) {
                     // joystickDeltaY: 正=下，负=上
-                    // hookWorldY: 增加=下潜，减少=上浮
-                    this.hookWorldY += this.joystickDeltaY * this.canvas.height * sensitivity;
+                    // hookWorldY: 增加=下潜
+                    // 灵敏度：摇杆满格时每秒移动屏幕高度的80%
+                    const moveSpeed = 0.8 * this.canvas.height;
+                    this.hookWorldY += this.joystickDeltaY * moveSpeed * 0.016; // 假设60fps，dt≈0.016
                 }
             }
         };
