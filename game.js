@@ -276,6 +276,13 @@ class DeepSeaFishingGame {
             e.preventDefault();
             e.stopPropagation();
             this.joystickActive = true;
+            this.initAudio();
+            
+            // 开始画面时，点击摇杆区域也启动游戏
+            if (this.state === GameState.START) {
+                this.startGame();
+            }
+            
             const touch = e.touches[0];
             handleJoystickMove(touch.clientX, touch.clientY);
         }, { passive: false });
