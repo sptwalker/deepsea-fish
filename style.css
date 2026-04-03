@@ -180,3 +180,11 @@ button:hover {
     margin: 20px 0;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
+
+#versionTag {
+    position: absolute;
+    bottom: 20px;
+    right: 30px;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 14px;
+}
