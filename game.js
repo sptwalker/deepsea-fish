@@ -237,21 +237,23 @@ class DeepSeaFishingGame {
             const dy = clientY - this.joystickCenterY;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
+            // 防止除以零
+            if (this.joystickMaxRadius <= 0) return;
+            
             // 计算摇杆位移比例
             let ratio = 1;
             if (distance > this.joystickMaxRadius) {
                 ratio = this.joystickMaxRadius / distance;
             }
             
-            this.joystickDeltaX = (dx * ratio) / this.joystickMaxRadius;
-            this.joystickDeltaY = (dy * ratio) / this.joystickMaxRadius;
+            // 更新摇杆值（-1 到 1）
+            this.joystickDeltaX = Math.max(-1, Math.min(1, (dx * ratio) / this.joystickMaxRadius));
+            this.joystickDeltaY = Math.max(-1, Math.min(1, (dy * ratio) / this.joystickMaxRadius));
             
             // 更新摇杆旋钮位置
             const knobX = dx * ratio;
             const knobY = dy * ratio;
             joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
-            
-            // 只更新摇杆值，钩子位置在游戏循环中更新
         };
         
         const handleJoystickEnd = () => {
@@ -570,6 +572,12 @@ class DeepSeaFishingGame {
             // hookWorldY: 增加=下潜
             const moveSpeed = 0.8 * this.canvas.height;
             this.hookWorldY += this.joystickDeltaY * moveSpeed * dt;
+            
+            // 限制 hookWorldY 不会太小（屏幕上沿）
+            const minHookWorldY = this.cameraY;
+            if (this.hookWorldY < minHookWorldY) {
+                this.hookWorldY = minHookWorldY;
+            }
         }
     }
     
