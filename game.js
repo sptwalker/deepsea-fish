@@ -207,27 +207,18 @@ class DeepSeaFishingGame {
     }
     
     handleTouchStart(e) {
-        e.preventDefault();
         this.initAudio();
+        this.touching = true;
         
         if (this.state === GameState.START) {
             this.startGame();
-            this.touching = true;
-            const touch = e.touches[0];
-            this.hookX = touch.clientX;
-        } else if (this.state === GameState.DESCENDING) {
-            this.touching = true;
-            const touch = e.touches[0];
-            this.hookX = touch.clientX;
-        } else if (this.state === GameState.ASCENDING) {
-            this.touching = true;
-            const touch = e.touches[0];
-            this.hookX = touch.clientX;
         }
+        
+        const touch = e.touches[0];
+        this.hookX = touch.clientX;
     }
     
     handleTouchMove(e) {
-        e.preventDefault();
         if (!this.touching) return;
         
         if (this.state === GameState.DESCENDING || this.state === GameState.ASCENDING) {
@@ -237,11 +228,17 @@ class DeepSeaFishingGame {
     }
     
     handleTouchEnd(e) {
-        e.preventDefault();
+        // 触摸结束时，如果之前是 DESCENDING 状态，切换到上浮
+        if (this.touching && this.state === GameState.DESCENDING) {
+            this.startAscending();
+        }
         this.touching = false;
     }
     
     handleClick(e) {
+        // 如果是触摸触发的点击，不处理（避免重复）
+        if (this.touching) return;
+        
         this.initAudio();
         
         if (this.state === GameState.START) {
