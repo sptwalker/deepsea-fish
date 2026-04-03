@@ -323,26 +323,11 @@ class DeepSeaFishingGame {
         if (this.state === GameState.START) {
             this.startGame();
         }
-        
-        const touch = e.touches[0];
-        this.hookX = touch.clientX;
-        this.hookYOffset = 0; // 重置Y偏移
+        // 不再通过屏幕触摸控制钩子位置，统一使用摇杆
     }
     
     handleTouchMove(e) {
-        if (!this.touching) return;
-        
-        if (this.state === GameState.DESCENDING || this.state === GameState.ASCENDING) {
-            const touch = e.touches[0];
-            this.hookX = Math.max(20, Math.min(this.canvas.width - 20, touch.clientX));
-            
-            // 下降阶段：控制鱼钩上下移动，范围限制在默认位置上下一定像素内
-            if (this.state === GameState.DESCENDING) {
-                const defaultY = this.getDefaultHookScreenY();
-                const maxOffset = 15 * this.pixelsPerMeter; // 最大上下偏移15米对应像素
-                this.hookYOffset = Math.max(-maxOffset, Math.min(maxOffset, touch.clientY - defaultY));
-            }
-        }
+        // 不再通过屏幕触摸控制钩子位置，统一使用摇杆
     }
     
     handleTouchEnd(e) {
