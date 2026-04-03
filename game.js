@@ -251,20 +251,7 @@ class DeepSeaFishingGame {
             const knobY = dy * ratio;
             joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
             
-            // 控制鱼钩位置（基于摇杆）
-            if (this.state === GameState.DESCENDING || this.state === GameState.ASCENDING) {
-                // 水平方向：直接设置位置
-                this.hookX = this.canvas.width / 2 + this.joystickDeltaX * (this.canvas.width / 2);
-                
-                // 垂直方向：控制世界Y坐标
-                if (this.state === GameState.DESCENDING) {
-                    // joystickDeltaY: 正=下，负=上
-                    // hookWorldY: 增加=下潜
-                    // 灵敏度：摇杆满格时每秒移动屏幕高度的80%
-                    const moveSpeed = 0.8 * this.canvas.height;
-                    this.hookWorldY += this.joystickDeltaY * moveSpeed * 0.016; // 假设60fps，dt≈0.016
-                }
-            }
+            // 只更新摇杆值，钩子位置在游戏循环中更新
         };
         
         const handleJoystickEnd = () => {
@@ -556,6 +543,9 @@ class DeepSeaFishingGame {
         this.depth += DESCEND_SPEED * dt;
         this.cameraY = this.depth * this.pixelsPerMeter;
         
+        // 更新钩子位置（摇杆控制）
+        this.updateHookPosition(dt);
+        
         if (this.depth >= MAX_DEPTH) {
             this.startAscending();
             return;
@@ -570,9 +560,25 @@ class DeepSeaFishingGame {
         }
     }
     
+    updateHookPosition(dt) {
+        // 水平方向：直接设置位置
+        this.hookX = this.canvas.width / 2 + this.joystickDeltaX * (this.canvas.width / 2);
+        
+        // 垂直方向：控制世界Y坐标
+        if (this.state === GameState.DESCENDING) {
+            // joystickDeltaY: 正=下，负=上
+            // hookWorldY: 增加=下潜
+            const moveSpeed = 0.8 * this.canvas.height;
+            this.hookWorldY += this.joystickDeltaY * moveSpeed * dt;
+        }
+    }
+    
     updateAscending(dt) {
         this.depth -= ASCEND_SPEED * dt;
         this.cameraY = this.depth * this.pixelsPerMeter;
+        
+        // 更新钩子水平位置（摇杆控制）
+        this.hookX = this.canvas.width / 2 + this.joystickDeltaX * (this.canvas.width / 2);
         
         if (this.depth <= 0) {
             this.depth = 0;
