@@ -81,6 +81,16 @@ class DeepSeaFishingGame {
         this.lastTime = 0;
         this.touching = false;
         
+        // 虚拟摇杆状态
+        this.joystickActive = false;
+        this.joystickCenterX = 0;
+        this.joystickCenterY = 0;
+        this.joystickDeltaX = 0; // 摇杆相对位移 (-1 ~ 1)
+        this.joystickDeltaY = 0;
+        
+        // 初始化摇杆
+        this.initJoystick();
+        
         // 宝箱
         this.treasureChest = null;
         this.chestImage = new Image();
@@ -203,6 +213,94 @@ class DeepSeaFishingGame {
         document.getElementById('playAgainBtn').addEventListener('click', (e) => {
             e.stopPropagation();
             this.restart();
+        });
+    }
+    
+    initJoystick() {
+        const joystickBase = document.getElementById('joystickBase');
+        const joystickKnob = document.getElementById('joystickKnob');
+        
+        if (!joystickBase || !joystickKnob) return;
+        
+        const baseRect = joystickBase.getBoundingClientRect();
+        this.joystickCenterX = baseRect.left + baseRect.width / 2;
+        this.joystickCenterY = baseRect.top + baseRect.height / 2;
+        this.joystickMaxRadius = baseRect.width / 2 - joystickKnob.offsetWidth / 2;
+        
+        const handleJoystickMove = (clientX, clientY) => {
+            const dx = clientX - this.joystickCenterX;
+            const dy = clientY - this.joystickCenterY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // 计算摇杆位移比例
+            let ratio = 1;
+            if (distance > this.joystickMaxRadius) {
+                ratio = this.joystickMaxRadius / distance;
+            }
+            
+            this.joystickDeltaX = (dx * ratio) / this.joystickMaxRadius;
+            this.joystickDeltaY = (dy * ratio) / this.joystickMaxRadius;
+            
+            // 更新摇杆旋钮位置
+            const knobX = dx * ratio;
+            const knobY = dy * ratio;
+            joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+            
+            // 控制鱼钩位置（基于摇杆）
+            if (this.state === GameState.DESCENDING || this.state === GameState.ASCENDING) {
+                // 水平方向：全范围移动
+                this.hookX = Math.max(20, Math.min(this.canvas.width - 20, 
+                    this.canvas.width / 2 + this.joystickDeltaX * (this.canvas.width / 2 - 20)));
+                
+                // 垂直方向：仅下降阶段，限制范围
+                if (this.state === GameState.DESCENDING) {
+                    const defaultY = this.getDefaultHookScreenY();
+                    const maxOffset = 15 * this.pixelsPerMeter;
+                    this.hookYOffset = this.joystickDeltaY * maxOffset;
+                }
+            }
+        };
+        
+        const handleJoystickEnd = () => {
+            this.joystickActive = false;
+            this.joystickDeltaX = 0;
+            this.joystickDeltaY = 0;
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+        };
+        
+        joystickBase.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.joystickActive = true;
+            const touch = e.touches[0];
+            handleJoystickMove(touch.clientX, touch.clientY);
+        }, { passive: false });
+        
+        joystickBase.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!this.joystickActive) return;
+            const touch = e.touches[0];
+            handleJoystickMove(touch.clientX, touch.clientY);
+        }, { passive: false });
+        
+        joystickBase.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleJoystickEnd();
+        }, { passive: false });
+        
+        joystickBase.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            handleJoystickEnd();
+        }, { passive: false });
+        
+        // 更新摇杆中心位置（窗口大小变化时）
+        window.addEventListener('resize', () => {
+            const rect = joystickBase.getBoundingClientRect();
+            this.joystickCenterX = rect.left + rect.width / 2;
+            this.joystickCenterY = rect.top + rect.height / 2;
+            this.joystickMaxRadius = rect.width / 2 - joystickKnob.offsetWidth / 2;
         });
     }
     
