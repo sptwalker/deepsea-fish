@@ -70,6 +70,7 @@ class DeepSeaFishingGame {
         this.depth = 0;
         this.maxDepthReached = 0;
         this.hookX = this.canvas.width / 2;
+        this.hookWorldY = 0; // 钩子世界Y坐标（玩家控制）
         this.hookYOffset = 0;
         this.collisionCount = 0;
         this.currentWeight = 0;
@@ -255,13 +256,14 @@ class DeepSeaFishingGame {
                 // 灵敏度系数（0-1，越小越不灵敏）
                 const sensitivity = 0.35;
                 
-                // 水平方向：全范围移动，无限制
+                // 水平方向：全范围移动
                 this.hookX = this.canvas.width / 2 + this.joystickDeltaX * (this.canvas.width / 2) * sensitivity;
                 
-                // 垂直方向：仅下降阶段，无范围限制
+                // 垂直方向：控制世界Y坐标
                 if (this.state === GameState.DESCENDING) {
-                    const defaultY = this.getDefaultHookScreenY();
-                    this.hookYOffset = this.joystickDeltaY * this.canvas.height * sensitivity;
+                    // joystickDeltaY: 正=下，负=上
+                    // hookWorldY: 增加=下潜，减少=上浮
+                    this.hookWorldY += this.joystickDeltaY * this.canvas.height * sensitivity;
                 }
             }
         };
@@ -271,6 +273,7 @@ class DeepSeaFishingGame {
             this.joystickDeltaX = 0;
             this.joystickDeltaY = 0;
             joystickKnob.style.transform = 'translate(-50%, -50%)';
+            // 不重置 hookWorldY，钩子保持在当前位置
         };
         
         joystickBase.addEventListener('touchstart', (e) => {
@@ -360,12 +363,16 @@ class DeepSeaFishingGame {
     startGame() {
         this.state = GameState.DESCENDING;
         this.depth = 0;
+        this.cameraY = 0;
         this.collisionCount = 0;
         this.caughtFish = [];
         this.fishes = [];
         this.particles = [];
         this.currentWeight = 0;
         this.currentMaxWeight = INITIAL_MAX_WEIGHT;
+        
+        // 初始化钩子世界Y坐标：初始在屏幕上距离顶部100像素的位置
+        this.hookWorldY = this.cameraY + 100;
         
         document.getElementById('startScreen').style.display = 'none';
         document.getElementById('weightCounter').style.display = 'block';
@@ -496,7 +503,6 @@ class DeepSeaFishingGame {
         if (this.state !== GameState.DESCENDING) return;
         
         this.state = GameState.ASCENDING;
-        this.hookYOffset = 0;
         this.maxDepthReached = this.depth;
         this.updateWeightDisplay();
     }
@@ -507,7 +513,7 @@ class DeepSeaFishingGame {
         this.cameraY = 0;
         this.maxDepthReached = 0;
         this.hookX = this.canvas.width / 2;
-        this.hookYOffset = 0;
+        this.hookWorldY = 0;
         this.collisionCount = 0;
         this.currentWeight = 0;
         this.caughtFish = [];
@@ -778,11 +784,14 @@ class DeepSeaFishingGame {
     }
     
     getHookScreenY() {
-        return this.getDefaultHookScreenY() + this.hookYOffset;
+        // 新系统：hookWorldY 是钩子的世界坐标
+        // screenY = hookWorldY - cameraY， clamped 到最小值 0
+        const screenY = this.hookWorldY - this.cameraY;
+        return Math.max(0, screenY);
     }
     
     getHookWorldY() {
-        return this.cameraY + this.getHookScreenY();
+        return this.hookWorldY;
     }
     
     updateWeightDisplay() {
