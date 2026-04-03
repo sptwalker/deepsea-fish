@@ -39,7 +39,7 @@ const ASCEND_SPEED = 10;
 const MAX_WEIGHT = 250;
 const INITIAL_MAX_WEIGHT = 250;
 const SCREEN_2_3_RATIO = 0.667;
-const MAX_COLLISIONS = 4;
+const MAX_COLLISIONS = 3;
 
 // 移动端配置
 const MOBILE_SCALE = 0.45;  // 鱼图片缩放系数（移动端）
@@ -216,6 +216,7 @@ class DeepSeaFishingGame {
         
         const touch = e.touches[0];
         this.hookX = touch.clientX;
+        this.hookYOffset = 0; // 重置Y偏移
     }
     
     handleTouchMove(e) {
@@ -224,14 +225,17 @@ class DeepSeaFishingGame {
         if (this.state === GameState.DESCENDING || this.state === GameState.ASCENDING) {
             const touch = e.touches[0];
             this.hookX = Math.max(20, Math.min(this.canvas.width - 20, touch.clientX));
+            
+            // 下降阶段：控制鱼钩上下移动，范围限制在默认位置上下一定像素内
+            if (this.state === GameState.DESCENDING) {
+                const defaultY = this.getDefaultHookScreenY();
+                const maxOffset = 15 * this.pixelsPerMeter; // 最大上下偏移15米对应像素
+                this.hookYOffset = Math.max(-maxOffset, Math.min(maxOffset, touch.clientY - defaultY));
+            }
         }
     }
     
     handleTouchEnd(e) {
-        // 触摸结束时，如果之前是 DESCENDING 状态，切换到上浮
-        if (this.touching && this.state === GameState.DESCENDING) {
-            this.startAscending();
-        }
         this.touching = false;
     }
     
@@ -243,9 +247,8 @@ class DeepSeaFishingGame {
         
         if (this.state === GameState.START) {
             this.startGame();
-        } else if (this.state === GameState.DESCENDING) {
-            this.startAscending();
         }
+        // 取消点击上升功能
     }
     
     handleMouseMove(e) {
@@ -462,7 +465,8 @@ class DeepSeaFishingGame {
         this.updateWeightDisplay();
         
         if (this.collisionCount >= MAX_COLLISIONS) {
-            this.failGame();
+            // 碰鱼3次后自动上升
+            this.startAscending();
         }
     }
     
@@ -940,7 +944,9 @@ class DeepSeaFishingGame {
                         
                         ctx.translate(fish.x, fishScreenY);
                         
-                        if (!isFacingRight) {
+                        // 鱼头朝向游动方向：GIF中鱼头在右侧
+                        // 向右游时翻转使鱼头朝右，向左游时鱼头原本朝左
+                        if (isFacingRight) {
                             ctx.scale(-1, 1);
                         }
                         
