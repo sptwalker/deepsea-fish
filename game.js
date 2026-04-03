@@ -88,8 +88,12 @@ class DeepSeaFishingGame {
         this.joystickDeltaX = 0; // 摇杆相对位移 (-1 ~ 1)
         this.joystickDeltaY = 0;
         
-        // 初始化摇杆
-        this.initJoystick();
+        // 初始化摇杆（延迟确保DOM已加载）
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.initJoystick());
+        } else {
+            this.initJoystick();
+        }
         
         // 宝箱
         this.treasureChest = null;
