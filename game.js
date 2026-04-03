@@ -897,16 +897,14 @@ class DeepSeaFishingGame {
     drawFishes() {
         const ctx = this.ctx;
         const time = Date.now() / 1000;
-        const mobileScale = this.getMobileScale();
         
         this.fishes.forEach(fish => {
             ctx.save();
             
             const fishImage = this.fishImages[fish.image];
+            const scale = fish.mobileScale || 1;
             
             if (fish.caught) {
-                const fishImage = this.fishImages[fish.image];
-                const scale = fish.mobileScale || 1;
                 let offsetY = fish.size * scale / 2;
                 if (fishImage && fishImage.complete) {
                     offsetY = fishImage.height * scale / 2;
@@ -931,8 +929,6 @@ class DeepSeaFishingGame {
                 }
             } else {
                 const fishScreenY = fish.worldY - this.cameraY;
-                const fishImage = this.fishImages[fish.image];
-                const scale = fish.mobileScale || 1;
                 const size = fishImage ? Math.max(fishImage.width, fishImage.height) * scale : fish.size * scale;
                 
                 if (fishScreenY > -size && fishScreenY < this.canvas.height + size) {
@@ -941,37 +937,21 @@ class DeepSeaFishingGame {
                     if (fishImage && fishImage.complete) {
                         const imgWidth = fishImage.width * scale;
                         const imgHeight = fishImage.height * scale;
-                        const tailWidth = imgWidth * 0.3;
-                        const bodyWidth = imgWidth - tailWidth;
                         
                         ctx.translate(fish.x, fishScreenY);
                         
-                        if (isFacingRight) {
+                        if (!isFacingRight) {
                             ctx.scale(-1, 1);
                         }
                         
-                        // 鱼身
+                        // 整体绘制图片，保持完整不裁剪
                         ctx.drawImage(
                             fishImage,
-                            0, 0, bodyWidth + 1, imgHeight,
                             -imgWidth / 2,
                             -imgHeight / 2,
-                            bodyWidth + 1, imgHeight
+                            imgWidth,
+                            imgHeight
                         );
-                        
-                        // 鱼尾
-                        ctx.save();
-                        const tailConnectX = -imgWidth / 2 + bodyWidth;
-                        ctx.translate(tailConnectX, 0);
-                        const tailWag = Math.sin(time * 0.003 + fish.x * 0.01) * 0.3;
-                        ctx.transform(1, tailWag, 0, 1, 0, 0);
-                        ctx.drawImage(
-                            fishImage,
-                            bodyWidth - 1, 0, tailWidth, imgHeight,
-                            -1, -imgHeight / 2,
-                            tailWidth, imgHeight
-                        );
-                        ctx.restore();
                     } else {
                         ctx.translate(fish.x, fishScreenY);
                         ctx.font = `${fish.size * scale}px Arial`;
