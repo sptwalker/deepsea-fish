@@ -588,6 +588,14 @@ class DeepSeaFishingGame {
         // 更新钩子水平位置（摇杆控制）
         this.hookX = this.canvas.width / 2 + this.joystickDeltaX * (this.canvas.width / 2);
         
+        // 上升阶段：确保钩子不会超出屏幕底部
+        // hookScreenY = hookWorldY - cameraY，应限制在屏幕范围内
+        const maxHookScreenY = this.canvas.height - 50; // 留50px边距
+        const currentScreenY = this.hookWorldY - this.cameraY;
+        if (currentScreenY > maxHookScreenY) {
+            this.hookWorldY = this.cameraY + maxHookScreenY;
+        }
+        
         if (this.depth <= 0) {
             this.depth = 0;
             this.cameraY = 0;
