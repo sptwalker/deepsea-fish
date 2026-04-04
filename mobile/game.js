@@ -71,6 +71,7 @@ class DeepSeaFishingGame {
         this.maxDepthReached = 0;
         this.hookX = this.canvas.width / 2;
         this.hookWorldY = 0; // 钩子世界Y坐标（玩家控制）
+        this.hookVelocityY = 0; // 钩子垂直速度（用于摇杆平滑控制）
         this.hookYOffset = 0;
         this.collisionCount = 0;
         this.currentWeight = 0;
@@ -88,6 +89,11 @@ class DeepSeaFishingGame {
         this.joystickCenterY = 0;
         this.joystickDeltaX = 0; // 摇杆相对位移 (-1 ~ 1)
         this.joystickDeltaY = 0;
+        
+        // 摇杆速度追踪（用于平滑加速/减速）
+        this.hookVelocityY = 0; // 钩子垂直速度
+        this.HOOK_DAMPING = 0.92; // 速度衰减系数（值越大滑动越远）
+        this.HOOK_ACCEL = 0.15; // 加速度系数（值越大响应越快）
         
         // 初始化摇杆（延迟确保DOM已加载）
         if (document.readyState === 'loading') {
@@ -225,14 +231,26 @@ class DeepSeaFishingGame {
         const joystickBase = document.getElementById('joystickBase');
         const joystickKnob = document.getElementById('joystickKnob');
         
-        if (!joystickBase || !joystickKnob) return;
+        if (!joystickBase || !joystickKnob) {
+            console.warn('Joystick elements not found');
+            return;
+        }
         
-        const baseRect = joystickBase.getBoundingClientRect();
-        this.joystickCenterX = baseRect.left + baseRect.width / 2;
-        this.joystickCenterY = baseRect.top + baseRect.height / 2;
-        this.joystickMaxRadius = baseRect.width / 2 - joystickKnob.offsetWidth / 2;
+        // 延迟确保DOM已完全渲染
+        requestAnimationFrame(() => {
+            this.updateJoystickCenter();
+        });
+        
+        const updateJoystickCenter = () => {
+            const rect = joystickBase.getBoundingClientRect();
+            this.joystickCenterX = rect.left + rect.width / 2;
+            this.joystickCenterY = rect.top + rect.height / 2;
+            this.joystickMaxRadius = rect.width / 2 - joystickKnob.offsetWidth / 2;
+        };
         
         const handleJoystickMove = (clientX, clientY) => {
+            updateJoystickCenter();
+            
             const dx = clientX - this.joystickCenterX;
             const dy = clientY - this.joystickCenterY;
             const distance = Math.sqrt(dx * dx + dy * dy);
@@ -256,17 +274,7 @@ class DeepSeaFishingGame {
             joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
         };
         
-        const handleJoystickEnd = () => {
-            this.joystickActive = false;
-            this.joystickDeltaX = 0;
-            this.joystickDeltaY = 0;
-            joystickKnob.style.transform = 'translate(-50%, -50%)';
-            // 不重置 hookWorldY，钩子保持在当前位置
-        };
-        
-        joystickBase.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+        const handleJoystickStart = (clientX, clientY) => {
             this.joystickActive = true;
             this.initAudio();
             
@@ -275,13 +283,26 @@ class DeepSeaFishingGame {
                 this.startGame();
             }
             
+            handleJoystickMove(clientX, clientY);
+        };
+        
+        const handleJoystickEnd = () => {
+            this.joystickActive = false;
+            this.joystickDeltaX = 0;
+            this.joystickDeltaY = 0;
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+            // 不重置 hookWorldY，钩子保持在当前位置
+        };
+        
+        // 触摸事件
+        joystickBase.addEventListener('touchstart', (e) => {
+            e.preventDefault();
             const touch = e.touches[0];
-            handleJoystickMove(touch.clientX, touch.clientY);
+            handleJoystickStart(touch.clientX, touch.clientY);
         }, { passive: false });
         
         joystickBase.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            e.stopPropagation();
             if (!this.joystickActive) return;
             const touch = e.touches[0];
             handleJoystickMove(touch.clientX, touch.clientY);
@@ -289,7 +310,6 @@ class DeepSeaFishingGame {
         
         joystickBase.addEventListener('touchend', (e) => {
             e.preventDefault();
-            e.stopPropagation();
             handleJoystickEnd();
         }, { passive: false });
         
@@ -298,13 +318,48 @@ class DeepSeaFishingGame {
             handleJoystickEnd();
         }, { passive: false });
         
+        // 鼠标事件（桌面浏览器测试用）
+        joystickBase.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            handleJoystickStart(e.clientX, e.clientY);
+            
+            const handleMouseMove = (e) => {
+                if (!this.joystickActive) return;
+                handleJoystickMove(e.clientX, e.clientY);
+            };
+            
+            const handleMouseUp = () => {
+                handleJoystickEnd();
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+            
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        });
+        
         // 更新摇杆中心位置（窗口大小变化时）
         window.addEventListener('resize', () => {
-            const rect = joystickBase.getBoundingClientRect();
-            this.joystickCenterX = rect.left + rect.width / 2;
-            this.joystickCenterY = rect.top + rect.height / 2;
-            this.joystickMaxRadius = rect.width / 2 - joystickKnob.offsetWidth / 2;
+            requestAnimationFrame(() => this.updateJoystickCenter());
         });
+        
+        // 也监听 orientationchange
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                requestAnimationFrame(() => this.updateJoystickCenter());
+            }, 100);
+        });
+    }
+    
+    updateJoystickCenter() {
+        const joystickBase = document.getElementById('joystickBase');
+        const joystickKnob = document.getElementById('joystickKnob');
+        if (!joystickBase || !joystickKnob) return;
+        
+        const rect = joystickBase.getBoundingClientRect();
+        this.joystickCenterX = rect.left + rect.width / 2;
+        this.joystickCenterY = rect.top + rect.height / 2;
+        this.joystickMaxRadius = rect.width / 2 - joystickKnob.offsetWidth / 2;
     }
     
     handleTouchStart(e) {
@@ -358,6 +413,7 @@ class DeepSeaFishingGame {
         this.particles = [];
         this.currentWeight = 0;
         this.currentMaxWeight = INITIAL_MAX_WEIGHT;
+        this.hookVelocityY = 0; // 重置速度
         
         // 初始化钩子世界Y坐标：初始在屏幕上距离顶部100像素的位置
         this.hookWorldY = this.cameraY + 100;
@@ -492,6 +548,7 @@ class DeepSeaFishingGame {
         
         this.state = GameState.ASCENDING;
         this.maxDepthReached = this.depth;
+        this.hookVelocityY = 0; // 切换阶段时重置速度
         this.updateWeightDisplay();
     }
     
@@ -502,6 +559,7 @@ class DeepSeaFishingGame {
         this.maxDepthReached = 0;
         this.hookX = this.canvas.width / 2;
         this.hookWorldY = 0;
+        this.hookVelocityY = 0;
         this.collisionCount = 0;
         this.currentWeight = 0;
         this.caughtFish = [];
@@ -566,17 +624,32 @@ class DeepSeaFishingGame {
         // 水平方向：直接设置位置
         this.hookX = this.canvas.width / 2 + this.joystickDeltaX * (this.canvas.width / 2);
         
-        // 垂直方向：控制世界Y坐标
+        // 垂直方向：使用速度追踪实现平滑加速/减速
         if (this.state === GameState.DESCENDING) {
-            // joystickDeltaY: 正=下，负=上
-            // hookWorldY: 增加=下潜
-            const moveSpeed = 0.8 * this.canvas.height;
-            this.hookWorldY += this.joystickDeltaY * moveSpeed * dt;
+            const targetVelocity = this.joystickDeltaY * 0.8 * this.canvas.height;
             
-            // 限制 hookWorldY 不会太小（屏幕上沿）
-            const minHookWorldY = this.cameraY;
+            // 使用加速度平滑过渡到目标速度
+            if (Math.abs(this.joystickDeltaY) > 0.05) {
+                // 摇杆被操作时，向目标速度加速
+                this.hookVelocityY += (targetVelocity - this.hookVelocityY) * this.HOOK_ACCEL;
+            } else {
+                // 摇杆居中时，速度衰减
+                this.hookVelocityY *= this.HOOK_DAMPING;
+            }
+            
+            // 根据速度更新位置
+            this.hookWorldY += this.hookVelocityY * dt;
+            
+            // 限制 hookWorldY 在屏幕范围内（上下各留30px边距）
+            const margin = 30;
+            const minHookWorldY = this.cameraY + margin;
+            const maxHookWorldY = this.cameraY + this.canvas.height - margin;
             if (this.hookWorldY < minHookWorldY) {
                 this.hookWorldY = minHookWorldY;
+                this.hookVelocityY = 0; // 碰撞时速度清零
+            } else if (this.hookWorldY > maxHookWorldY) {
+                this.hookWorldY = maxHookWorldY;
+                this.hookVelocityY = 0;
             }
         }
     }
@@ -588,15 +661,27 @@ class DeepSeaFishingGame {
         // 更新钩子水平位置（摇杆控制）
         this.hookX = this.canvas.width / 2 + this.joystickDeltaX * (this.canvas.width / 2);
         
-        // 上升阶段：允许摇杆控制垂直位置
-        const moveSpeed = 0.8 * this.canvas.height;
-        this.hookWorldY += this.joystickDeltaY * moveSpeed * dt;
+        // 上升阶段：允许摇杆控制垂直位置（带速度平滑）
+        const targetVelocity = this.joystickDeltaY * 0.8 * this.canvas.height;
         
-        // 确保钩子不会超出屏幕底部
-        const maxHookScreenY = this.canvas.height - 50;
-        const currentScreenY = this.hookWorldY - this.cameraY;
-        if (currentScreenY > maxHookScreenY) {
-            this.hookWorldY = this.cameraY + maxHookScreenY;
+        if (Math.abs(this.joystickDeltaY) > 0.05) {
+            this.hookVelocityY += (targetVelocity - this.hookVelocityY) * this.HOOK_ACCEL;
+        } else {
+            this.hookVelocityY *= this.HOOK_DAMPING;
+        }
+        
+        this.hookWorldY += this.hookVelocityY * dt;
+        
+        // 确保钩子不会超出屏幕（上下各留30px边距）
+        const margin = 30;
+        const minHookWorldY = this.cameraY + margin;
+        const maxHookWorldY = this.cameraY + this.canvas.height - margin;
+        if (this.hookWorldY < minHookWorldY) {
+            this.hookWorldY = minHookWorldY;
+            this.hookVelocityY = 0;
+        } else if (this.hookWorldY > maxHookWorldY) {
+            this.hookWorldY = maxHookWorldY;
+            this.hookVelocityY = 0;
         }
         
         if (this.depth <= 0) {
@@ -1072,6 +1157,10 @@ class DeepSeaFishingGame {
                         
                         ctx.translate(fish.x, fishScreenY);
                         
+                        // 鱼尾摆动效果：基于时间的正弦波旋转（3倍频率）
+                        const wobbleAngle = Math.sin(time * 8 + fish.x * 0.1) * 0.15;
+                        ctx.rotate(wobbleAngle);
+                        
                         // 鱼头朝向游动方向：GIF中鱼头在右侧
                         // 向右游时翻转使鱼头朝右，向左游时鱼头原本朝左
                         if (isFacingRight) {
@@ -1088,6 +1177,9 @@ class DeepSeaFishingGame {
                         );
                     } else {
                         ctx.translate(fish.x, fishScreenY);
+                        // 鱼尾摆动效果（emoji模式）
+                        const wobbleAngle = Math.sin(time * 8 + fish.x * 0.1) * 0.15;
+                        ctx.rotate(wobbleAngle);
                         ctx.font = `${fish.size * scale}px Arial`;
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
