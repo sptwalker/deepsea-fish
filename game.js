@@ -1161,15 +1161,8 @@ class DeepSeaFishingGame {
                             ctx.scale(-1, 1);
                         }
                         
-                        // 绘制完整鱼图片（不拆分）
-                        ctx.drawImage(
-                            fishImage,
-                            0, 0, imgWidth, imgHeight,
-                            -imgWidth / 2,
-                            -imgHeight / 2,
-                            imgWidth,
-                            imgHeight
-                        );
+                        // 绘制完整鱼图片（使用5参数形式，绘制完整原始图片）
+                        ctx.drawImage(fishImage, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
                     } else {
                         ctx.translate(fish.x, fishScreenY);
                         ctx.font = `${fish.size * scale}px Arial`;
