@@ -1154,32 +1154,39 @@ class DeepSeaFishingGame {
                     if (fishImage && fishImage.complete) {
                         const imgWidth = fishImage.width * scale;
                         const imgHeight = fishImage.height * scale;
+                        const tailWidth = imgWidth * 0.3;
+                        const bodyWidth = imgWidth - tailWidth;
                         
                         ctx.translate(fish.x, fishScreenY);
                         
-                        // 鱼尾摆动效果：基于时间的正弦波旋转（3倍频率）
-                        const wobbleAngle = Math.sin(time * 8 + fish.x * 0.1) * 0.15;
-                        ctx.rotate(wobbleAngle);
-                        
-                        // 鱼头朝向游动方向：GIF中鱼头在右侧
-                        // 向右游时翻转使鱼头朝右，向左游时鱼头原本朝左
                         if (isFacingRight) {
                             ctx.scale(-1, 1);
                         }
                         
-                        // 整体绘制图片，保持完整不裁剪
+                        // 鱼身（不摆动）
                         ctx.drawImage(
                             fishImage,
+                            0, 0, bodyWidth + 1, imgHeight,
                             -imgWidth / 2,
                             -imgHeight / 2,
-                            imgWidth,
-                            imgHeight
+                            bodyWidth + 1, imgHeight
                         );
+                        
+                        // 鱼尾（摆动，3倍频率）
+                        ctx.save();
+                        const tailConnectX = -imgWidth / 2 + bodyWidth;
+                        ctx.translate(tailConnectX, 0);
+                        const tailWag = Math.sin(time * 8 + fish.x * 0.1) * 0.3;
+                        ctx.transform(1, tailWag, 0, 1, 0, 0);
+                        ctx.drawImage(
+                            fishImage,
+                            bodyWidth - 1, 0, tailWidth, imgHeight,
+                            -1, -imgHeight / 2,
+                            tailWidth, imgHeight
+                        );
+                        ctx.restore();
                     } else {
                         ctx.translate(fish.x, fishScreenY);
-                        // 鱼尾摆动效果（emoji模式）
-                        const wobbleAngle = Math.sin(time * 8 + fish.x * 0.1) * 0.15;
-                        ctx.rotate(wobbleAngle);
                         ctx.font = `${fish.size * scale}px Arial`;
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
