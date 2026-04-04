@@ -640,11 +640,16 @@ class DeepSeaFishingGame {
             // 根据速度更新位置
             this.hookWorldY += this.hookVelocityY * dt;
             
-            // 限制 hookWorldY 不会太小（屏幕上沿）
-            const minHookWorldY = this.cameraY;
+            // 限制 hookWorldY 在屏幕范围内（上下各留30px边距）
+            const margin = 30;
+            const minHookWorldY = this.cameraY + margin;
+            const maxHookWorldY = this.cameraY + this.canvas.height - margin;
             if (this.hookWorldY < minHookWorldY) {
                 this.hookWorldY = minHookWorldY;
                 this.hookVelocityY = 0; // 碰撞时速度清零
+            } else if (this.hookWorldY > maxHookWorldY) {
+                this.hookWorldY = maxHookWorldY;
+                this.hookVelocityY = 0;
             }
         }
     }
@@ -667,11 +672,15 @@ class DeepSeaFishingGame {
         
         this.hookWorldY += this.hookVelocityY * dt;
         
-        // 确保钩子不会超出屏幕底部
-        const maxHookScreenY = this.canvas.height - 50;
-        const currentScreenY = this.hookWorldY - this.cameraY;
-        if (currentScreenY > maxHookScreenY) {
-            this.hookWorldY = this.cameraY + maxHookScreenY;
+        // 确保钩子不会超出屏幕（上下各留30px边距）
+        const margin = 30;
+        const minHookWorldY = this.cameraY + margin;
+        const maxHookWorldY = this.cameraY + this.canvas.height - margin;
+        if (this.hookWorldY < minHookWorldY) {
+            this.hookWorldY = minHookWorldY;
+            this.hookVelocityY = 0;
+        } else if (this.hookWorldY > maxHookWorldY) {
+            this.hookWorldY = maxHookWorldY;
             this.hookVelocityY = 0;
         }
         
