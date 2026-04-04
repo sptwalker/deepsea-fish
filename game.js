@@ -1157,6 +1157,10 @@ class DeepSeaFishingGame {
                         
                         ctx.translate(fish.x, fishScreenY);
                         
+                        // 鱼尾摆动效果：基于时间的正弦波旋转（3倍频率）
+                        const wobbleAngle = Math.sin(time * 8 + fish.x * 0.1) * 0.15;
+                        ctx.rotate(wobbleAngle);
+                        
                         // 鱼头朝向游动方向：GIF中鱼头在右侧
                         // 向右游时翻转使鱼头朝右，向左游时鱼头原本朝左
                         if (isFacingRight) {
@@ -1173,6 +1177,9 @@ class DeepSeaFishingGame {
                         );
                     } else {
                         ctx.translate(fish.x, fishScreenY);
+                        // 鱼尾摆动效果（emoji模式）
+                        const wobbleAngle = Math.sin(time * 8 + fish.x * 0.1) * 0.15;
+                        ctx.rotate(wobbleAngle);
                         ctx.font = `${fish.size * scale}px Arial`;
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';

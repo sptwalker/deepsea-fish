@@ -32,7 +32,18 @@ body {
 }
 
 #depthDisplay {
-    display: none;
+    display: block;
+    position: absolute;
+    top: max(10px, env(safe-area-inset-top));
+    right: max(60px, calc(env(safe-area-inset-right) + 60px));
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: clamp(16px, 4vw, 24px);
+    padding: clamp(6px, 1.5vw, 10px) clamp(10px, 2.5vw, 16px);
+    border-radius: 6px;
+    z-index: 50;
+    pointer-events: none;
+    font-weight: bold;
 }
 
 #versionTag {
