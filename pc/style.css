@@ -1,0 +1,190 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    overflow: hidden;
+    font-family: 'Microsoft YaHei', sans-serif;
+    background: #001a33;
+}
+
+#gameContainer {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#gameCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#depthDisplay {
+    display: none; /* 深度显示已改为左侧坐标轴 */
+}
+
+#weightCounter {
+    position: absolute;
+    top: 50%;
+    right: 30px;
+    transform: translateY(-50%);
+    z-index: 10;
+}
+
+#weightLabel {
+    text-align: center;
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+#weightIcon {
+    width: 70px;
+    height: var(--icon-height, 300px); /* 使用CSS变量控制高度 */
+    background: linear-gradient(to top, 
+        #44ff44 0%, 
+        #aaff44 25%, 
+        #ffcc44 50%, 
+        #ffaa00 75%, 
+        #ff4444 100%);
+    border-radius: 10px 10px 0 0;
+    border: 3px solid #fff;
+    position: relative;
+    overflow: hidden;
+    transition: height 0.3s ease; /* 添加高度过渡动画 */
+}
+
+#weightIcon::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, #fff 0%, #fff 100%);
+    height: var(--mask-height, 100%);
+    transition: height 0.2s;
+}
+
+#weightValue {
+    text-align: center;
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+#startScreen,
+#failScreen,
+#winScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 26, 51, 0.9);
+    color: #fff;
+    z-index: 100;
+}
+
+#startScreen h1,
+#failScreen h1,
+#winScreen h1 {
+    font-size: 72px;
+    margin-bottom: 30px;
+    text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+}
+
+#startScreen p,
+#failScreen p {
+    font-size: 24px;
+    margin: 10px 0;
+}
+
+button {
+    padding: 15px 40px;
+    font-size: 24px;
+    background: linear-gradient(to bottom, #4CAF50, #2E7D32);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 30px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+
+#maxDepth {
+    font-size: 28px;
+    margin: 10px 0;
+}
+
+#fishCount {
+    font-size: 28px;
+    margin: 10px 0;
+}
+
+#fishDisplay {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+    max-width: 600px;
+}
+
+.fishItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+}
+
+.fishIcon {
+    font-size: 36px;
+    margin-bottom: 5px;
+}
+
+.fishName {
+    font-size: 14px;
+    margin-bottom: 3px;
+}
+
+.fishValue {
+    font-size: 16px;
+    color: #ffd700;
+    font-weight: bold;
+}
+
+#totalValue {
+    font-size: 48px;
+    color: #ffd700;
+    font-weight: bold;
+    margin: 20px 0;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+#versionTag {
+    position: absolute;
+    bottom: 20px;
+    right: 30px;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 14px;
+}
