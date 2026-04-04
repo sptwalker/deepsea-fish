@@ -92,8 +92,8 @@ class DeepSeaFishingGame {
         
         // 摇杆速度追踪（用于平滑加速/减速）
         this.hookVelocityY = 0; // 钩子垂直速度
-        this.HOOK_DAMPING = 0.92; // 速度衰减系数（值越大滑动越远）
-        this.HOOK_ACCEL = 0.15; // 加速度系数（值越大响应越快）
+        this.HOOK_DAMPING = 0.85; // 速度衰减系数（值越小停止越快）
+        this.HOOK_ACCEL = 0.3; // 加速度系数（值越大响应越快）
         
         // 初始化摇杆（延迟确保DOM已加载）
         if (document.readyState === 'loading') {
@@ -1154,8 +1154,6 @@ class DeepSeaFishingGame {
                     if (fishImage && fishImage.complete) {
                         const imgWidth = fishImage.width * scale;
                         const imgHeight = fishImage.height * scale;
-                        const tailWidth = imgWidth * 0.3;
-                        const bodyWidth = imgWidth - tailWidth;
                         
                         ctx.translate(fish.x, fishScreenY);
                         
@@ -1163,28 +1161,15 @@ class DeepSeaFishingGame {
                             ctx.scale(-1, 1);
                         }
                         
-                        // 鱼身（不摆动）
+                        // 绘制完整鱼图片（不拆分）
                         ctx.drawImage(
                             fishImage,
-                            0, 0, bodyWidth + 1, imgHeight,
+                            0, 0, imgWidth, imgHeight,
                             -imgWidth / 2,
                             -imgHeight / 2,
-                            bodyWidth + 1, imgHeight
+                            imgWidth,
+                            imgHeight
                         );
-                        
-                        // 鱼尾（摆动，3倍频率）
-                        ctx.save();
-                        const tailConnectX = -imgWidth / 2 + bodyWidth;
-                        ctx.translate(tailConnectX, 0);
-                        const tailWag = Math.sin(time * 8 + fish.x * 0.1) * 0.3;
-                        ctx.transform(1, tailWag, 0, 1, 0, 0);
-                        ctx.drawImage(
-                            fishImage,
-                            bodyWidth - 1, 0, tailWidth, imgHeight,
-                            -1, -imgHeight / 2,
-                            tailWidth, imgHeight
-                        );
-                        ctx.restore();
                     } else {
                         ctx.translate(fish.x, fishScreenY);
                         ctx.font = `${fish.size * scale}px Arial`;
