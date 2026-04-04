@@ -225,14 +225,26 @@ class DeepSeaFishingGame {
         const joystickBase = document.getElementById('joystickBase');
         const joystickKnob = document.getElementById('joystickKnob');
         
-        if (!joystickBase || !joystickKnob) return;
+        if (!joystickBase || !joystickKnob) {
+            console.warn('Joystick elements not found');
+            return;
+        }
         
-        const baseRect = joystickBase.getBoundingClientRect();
-        this.joystickCenterX = baseRect.left + baseRect.width / 2;
-        this.joystickCenterY = baseRect.top + baseRect.height / 2;
-        this.joystickMaxRadius = baseRect.width / 2 - joystickKnob.offsetWidth / 2;
+        // 延迟确保DOM已完全渲染
+        requestAnimationFrame(() => {
+            this.updateJoystickCenter();
+        });
+        
+        const updateJoystickCenter = () => {
+            const rect = joystickBase.getBoundingClientRect();
+            this.joystickCenterX = rect.left + rect.width / 2;
+            this.joystickCenterY = rect.top + rect.height / 2;
+            this.joystickMaxRadius = rect.width / 2 - joystickKnob.offsetWidth / 2;
+        };
         
         const handleJoystickMove = (clientX, clientY) => {
+            updateJoystickCenter();
+            
             const dx = clientX - this.joystickCenterX;
             const dy = clientY - this.joystickCenterY;
             const distance = Math.sqrt(dx * dx + dy * dy);
@@ -256,17 +268,7 @@ class DeepSeaFishingGame {
             joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
         };
         
-        const handleJoystickEnd = () => {
-            this.joystickActive = false;
-            this.joystickDeltaX = 0;
-            this.joystickDeltaY = 0;
-            joystickKnob.style.transform = 'translate(-50%, -50%)';
-            // 不重置 hookWorldY，钩子保持在当前位置
-        };
-        
-        joystickBase.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+        const handleJoystickStart = (clientX, clientY) => {
             this.joystickActive = true;
             this.initAudio();
             
@@ -275,13 +277,26 @@ class DeepSeaFishingGame {
                 this.startGame();
             }
             
+            handleJoystickMove(clientX, clientY);
+        };
+        
+        const handleJoystickEnd = () => {
+            this.joystickActive = false;
+            this.joystickDeltaX = 0;
+            this.joystickDeltaY = 0;
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+            // 不重置 hookWorldY，钩子保持在当前位置
+        };
+        
+        // 触摸事件
+        joystickBase.addEventListener('touchstart', (e) => {
+            e.preventDefault();
             const touch = e.touches[0];
-            handleJoystickMove(touch.clientX, touch.clientY);
+            handleJoystickStart(touch.clientX, touch.clientY);
         }, { passive: false });
         
         joystickBase.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            e.stopPropagation();
             if (!this.joystickActive) return;
             const touch = e.touches[0];
             handleJoystickMove(touch.clientX, touch.clientY);
@@ -289,7 +304,6 @@ class DeepSeaFishingGame {
         
         joystickBase.addEventListener('touchend', (e) => {
             e.preventDefault();
-            e.stopPropagation();
             handleJoystickEnd();
         }, { passive: false });
         
@@ -298,13 +312,48 @@ class DeepSeaFishingGame {
             handleJoystickEnd();
         }, { passive: false });
         
+        // 鼠标事件（桌面浏览器测试用）
+        joystickBase.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            handleJoystickStart(e.clientX, e.clientY);
+            
+            const handleMouseMove = (e) => {
+                if (!this.joystickActive) return;
+                handleJoystickMove(e.clientX, e.clientY);
+            };
+            
+            const handleMouseUp = () => {
+                handleJoystickEnd();
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+            
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        });
+        
         // 更新摇杆中心位置（窗口大小变化时）
         window.addEventListener('resize', () => {
-            const rect = joystickBase.getBoundingClientRect();
-            this.joystickCenterX = rect.left + rect.width / 2;
-            this.joystickCenterY = rect.top + rect.height / 2;
-            this.joystickMaxRadius = rect.width / 2 - joystickKnob.offsetWidth / 2;
+            requestAnimationFrame(() => this.updateJoystickCenter());
         });
+        
+        // 也监听 orientationchange
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                requestAnimationFrame(() => this.updateJoystickCenter());
+            }, 100);
+        });
+    }
+    
+    updateJoystickCenter() {
+        const joystickBase = document.getElementById('joystickBase');
+        const joystickKnob = document.getElementById('joystickKnob');
+        if (!joystickBase || !joystickKnob) return;
+        
+        const rect = joystickBase.getBoundingClientRect();
+        this.joystickCenterX = rect.left + rect.width / 2;
+        this.joystickCenterY = rect.top + rect.height / 2;
+        this.joystickMaxRadius = rect.width / 2 - joystickKnob.offsetWidth / 2;
     }
     
     handleTouchStart(e) {
