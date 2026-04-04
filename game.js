@@ -71,6 +71,7 @@ class DeepSeaFishingGame {
         this.maxDepthReached = 0;
         this.hookX = this.canvas.width / 2;
         this.hookWorldY = 0; // 钩子世界Y坐标（玩家控制）
+        this.hookVelocityY = 0; // 钩子垂直速度（用于摇杆平滑控制）
         this.hookYOffset = 0;
         this.collisionCount = 0;
         this.currentWeight = 0;
@@ -88,6 +89,11 @@ class DeepSeaFishingGame {
         this.joystickCenterY = 0;
         this.joystickDeltaX = 0; // 摇杆相对位移 (-1 ~ 1)
         this.joystickDeltaY = 0;
+        
+        // 摇杆速度追踪（用于平滑加速/减速）
+        this.hookVelocityY = 0; // 钩子垂直速度
+        this.HOOK_DAMPING = 0.92; // 速度衰减系数（值越大滑动越远）
+        this.HOOK_ACCEL = 0.15; // 加速度系数（值越大响应越快）
         
         // 初始化摇杆（延迟确保DOM已加载）
         if (document.readyState === 'loading') {
@@ -407,6 +413,7 @@ class DeepSeaFishingGame {
         this.particles = [];
         this.currentWeight = 0;
         this.currentMaxWeight = INITIAL_MAX_WEIGHT;
+        this.hookVelocityY = 0; // 重置速度
         
         // 初始化钩子世界Y坐标：初始在屏幕上距离顶部100像素的位置
         this.hookWorldY = this.cameraY + 100;
@@ -541,6 +548,7 @@ class DeepSeaFishingGame {
         
         this.state = GameState.ASCENDING;
         this.maxDepthReached = this.depth;
+        this.hookVelocityY = 0; // 切换阶段时重置速度
         this.updateWeightDisplay();
     }
     
@@ -551,6 +559,7 @@ class DeepSeaFishingGame {
         this.maxDepthReached = 0;
         this.hookX = this.canvas.width / 2;
         this.hookWorldY = 0;
+        this.hookVelocityY = 0;
         this.collisionCount = 0;
         this.currentWeight = 0;
         this.caughtFish = [];
@@ -615,17 +624,27 @@ class DeepSeaFishingGame {
         // 水平方向：直接设置位置
         this.hookX = this.canvas.width / 2 + this.joystickDeltaX * (this.canvas.width / 2);
         
-        // 垂直方向：控制世界Y坐标
+        // 垂直方向：使用速度追踪实现平滑加速/减速
         if (this.state === GameState.DESCENDING) {
-            // joystickDeltaY: 正=下，负=上
-            // hookWorldY: 增加=下潜
-            const moveSpeed = 0.8 * this.canvas.height;
-            this.hookWorldY += this.joystickDeltaY * moveSpeed * dt;
+            const targetVelocity = this.joystickDeltaY * 0.8 * this.canvas.height;
+            
+            // 使用加速度平滑过渡到目标速度
+            if (Math.abs(this.joystickDeltaY) > 0.05) {
+                // 摇杆被操作时，向目标速度加速
+                this.hookVelocityY += (targetVelocity - this.hookVelocityY) * this.HOOK_ACCEL;
+            } else {
+                // 摇杆居中时，速度衰减
+                this.hookVelocityY *= this.HOOK_DAMPING;
+            }
+            
+            // 根据速度更新位置
+            this.hookWorldY += this.hookVelocityY * dt;
             
             // 限制 hookWorldY 不会太小（屏幕上沿）
             const minHookWorldY = this.cameraY;
             if (this.hookWorldY < minHookWorldY) {
                 this.hookWorldY = minHookWorldY;
+                this.hookVelocityY = 0; // 碰撞时速度清零
             }
         }
     }
@@ -637,15 +656,23 @@ class DeepSeaFishingGame {
         // 更新钩子水平位置（摇杆控制）
         this.hookX = this.canvas.width / 2 + this.joystickDeltaX * (this.canvas.width / 2);
         
-        // 上升阶段：允许摇杆控制垂直位置
-        const moveSpeed = 0.8 * this.canvas.height;
-        this.hookWorldY += this.joystickDeltaY * moveSpeed * dt;
+        // 上升阶段：允许摇杆控制垂直位置（带速度平滑）
+        const targetVelocity = this.joystickDeltaY * 0.8 * this.canvas.height;
+        
+        if (Math.abs(this.joystickDeltaY) > 0.05) {
+            this.hookVelocityY += (targetVelocity - this.hookVelocityY) * this.HOOK_ACCEL;
+        } else {
+            this.hookVelocityY *= this.HOOK_DAMPING;
+        }
+        
+        this.hookWorldY += this.hookVelocityY * dt;
         
         // 确保钩子不会超出屏幕底部
         const maxHookScreenY = this.canvas.height - 50;
         const currentScreenY = this.hookWorldY - this.cameraY;
         if (currentScreenY > maxHookScreenY) {
             this.hookWorldY = this.cameraY + maxHookScreenY;
+            this.hookVelocityY = 0;
         }
         
         if (this.depth <= 0) {
